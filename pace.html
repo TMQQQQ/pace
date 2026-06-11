@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Running Race Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #F5F0E8;
+      --surface:   #FDFAF5;
+      --border:    #E8E0D0;
+      --text:      #1A1A1A;
+      --muted:     #6B6560;
+      --accent:    #D4622A;
+      --accent-lt: #F2E4DC;
+      --green:     #2A7D4F;
+      --green-lt:  #DCF2E7;
+      --red-lt:    #F5DCDC;
+      --red:       #C0392B;
+      --radius:    14px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 80px;
+    }
+
+    /* ── Top nav ─────────────────────────────────────────── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 0;
+      margin-right: 32px;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-name {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .tab-btn {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 16px 16px 14px;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+
+    .tab-btn:hover { color: var(--text); }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .page { display: none; padding: 40px 20px 0; }
+    .page.active { display: block; }
+
+    .page-inner {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      font-size: clamp(24px, 4vw, 34px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── Card ───────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    /* ── Form ───────────────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .field select,
+    .field input[type="text"],
+    .field input[type="number"] {
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6560' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+      cursor: pointer;
+    }
+
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+      background: #fff;
+    }
+
+    .time-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .time-inputs input { text-align: center; }
+    .time-labels { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 4px; }
+    .time-labels span { font-size: 11px; color: var(--muted); text-align: center; }
+
+    /* ── Buttons ────────────────────────────────────────── */
+    .btn {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      letter-spacing: -0.01em;
+    }
+
+    .btn:hover  { opacity: 0.85; }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      padding: 12px 20px;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    .btn-secondary {
+      background: var(--bg);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      padding: 9px 16px;
+    }
+
+    .btn-ghost {
+      background: none;
+      color: var(--accent);
+      padding: 6px 12px;
+      font-size: 13px;
+      text-decoration: underline;
+      text-decoration-color: transparent;
+    }
+    .btn-ghost:hover { text-decoration-color: var(--accent); }
+
+    .btn-danger {
+      background: var(--red-lt);
+      color: var(--red);
+      padding: 7px 14px;
+      font-size: 13px;
+    }
+
+    /* ── History banner (avg baseline) ─────────────────── */
+    .avg-banner {
+      display: none;
+      background: var(--green-lt);
+      border: 1px solid #b3ddc8;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--green);
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .avg-banner.visible { display: flex; }
+    .avg-banner strong { font-weight: 600; }
+    .avg-banner .use-avg-btn {
+      margin-left: auto;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ── Results table ──────────────────────────────────── */
+    .results { display: none; }
+    .results.visible { display: block; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .based-on {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--accent-lt);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-weight: 500;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      padding: 0 0 10px;
+      text-align: left;
+    }
+    thead th:not(:first-child) { text-align: right; }
+
+    tbody tr { border-top: 1px solid var(--border); }
+    tbody tr:last-child { border-bottom: 1px solid var(--border); }
+
+    tbody td { padding: 12px 0; font-size: 14px; }
+    tbody td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .race-name { font-weight: 600; }
+    .race-dist { font-size: 11px; color: var(--muted); }
+    .time-cell { font-weight: 600; letter-spacing: -0.02em; }
+
+    .pace-pill {
+      display: inline-block;
+      background: var(--accent-lt);
+      color: var(--accent);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .save-row {
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .save-row.visible { display: flex; }
+    .save-row .save-label { font-size: 13px; color: var(--muted); flex: 1; min-width: 140px; }
+    .saved-confirm {
+      font-size: 13px;
+      color: var(--green);
+      font-weight: 500;
+      display: none;
+    }
+    .saved-confirm.visible { display: inline; }
+
+    /* ── Error ──────────────────────────────────────────── */
+    .error-msg { font-size: 12px; color: var(--red); margin-top: 8px; display: none; }
+    .error-msg.visible { display: block; }
+
+    /* ── Profile page ───────────────────────────────────── */
+    .profile-name-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .profile-info { flex: 1; }
+    .profile-name-display { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+    .profile-meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    .name-edit-row { display: none; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .name-edit-row.visible { display: flex; }
+    .name-edit-row input { flex: 1; min-width: 160px; }
+
+    /* ── Stats row ──────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 400px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .stat-val { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+    .stat-label { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+
+    /* ── History list ───────────────────────────────────── */
+    .history-filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .filter-btn.active {
+      background: var(--text);
+      color: #fff;
+      border-color: var(--text);
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-item:first-child { border-top: 1px solid var(--border); }
+
+    .hist-dist-badge {
+      background: var(--accent-lt);
+      color: var(--accent);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      min-width: 52px;
+      flex-shrink: 0;
+    }
+
+    .hist-info { flex: 1; }
+    .hist-time { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+    .hist-pace { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .hist-date { font-size: 11px; color: var(--muted); }
+
+    .hist-delta {
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 3px 8px;
+      flex-shrink: 0;
+    }
+    .hist-delta.better { background: var(--green-lt); color: var(--green); }
+    .hist-delta.worse  { background: var(--red-lt);   color: var(--red); }
+    .hist-delta.first  { background: var(--accent-lt); color: var(--accent); }
+
+    .hist-delete {
+      background: none;
+      border: none;
+      color: #ccc;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      transition: color 0.12s;
+    }
+    .hist-delete:hover { color: var(--red); }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-state .empty-icon { font-size: 36px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; line-height: 1.6; }
+
+    /* ── Chart ──────────────────────────────────────────── */
+    .chart-section { margin-top: 4px; }
+    .chart-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .chart-tab {
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .chart-tab.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    canvas#trend-chart {
+      width: 100%;
+      display: block;
+      border-radius: 8px;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .chart-empty {
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: var(--muted);
+      border: 1.5px dashed var(--border);
+      border-radius: 8px;
+    }
+
+    /* ── Joke modal ─────────────────────────────────────── */
+    #joke-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.45);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #joke-overlay.visible { display: flex; }
+
+    .joke-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 32px 28px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      animation: pop-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes pop-in {
+      from { transform: scale(0.88); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+
+    .joke-emoji { font-size: 52px; line-height: 1; margin-bottom: 16px; }
+    .joke-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+    .joke-text {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .joke-actions { display: flex; flex-direction: column; gap: 8px; }
+    .joke-fix-btn {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .joke-fix-btn:hover { opacity: 0.85; }
+    .joke-continue-btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      background: none;
+      color: var(--muted);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .joke-continue-btn:hover { color: var(--text); border-color: var(--text); }
+
+    @media (max-width: 480px) {
+      .joke-card { padding: 28px 20px 22px; }
+      .joke-emoji { font-size: 40px; }
+    }
+
+    /* ── Footnote ───────────────────────────────────────── */
+    .footnote {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-top: 12px;
+    }
+
+    /* ── Mobile overrides (≤ 480px) ────────────────────── */
+    @media (max-width: 480px) {
+      /* Nav: brand shrinks, tabs wrap below */
+      nav { flex-wrap: wrap; padding: 0 16px; }
+      .nav-brand { margin-right: auto; padding: 12px 0; }
+      .tab-btn { padding: 10px 14px 8px; font-size: 13px; }
+
+      /* Page & card spacing */
+      .page { padding: 24px 12px 0; }
+      .card { padding: 18px 16px; }
+
+      /* History items: stack delta onto second line */
+      .history-item { flex-wrap: wrap; gap: 10px; }
+      .hist-info { min-width: 0; }
+      .hist-delta { margin-left: 62px; /* align under info, past the badge */ }
+      .hist-delete { margin-left: auto; }
+
+      /* Setup card */
+      .setup-card { padding: 28px 20px; }
+    }
+
+    /* ── Setup screen (first visit) ─────────────────────── */
+    #setup-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(245, 240, 232, 0.92);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #setup-overlay.visible { display: flex; }
+    .setup-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+    .setup-card .setup-icon { font-size: 40px; margin-bottom: 16px; }
+    .setup-card h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .setup-card p { font-size: 14px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+    .setup-card input {
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 14px;
+      width: 100%;
+      outline: none;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .setup-card input:focus { border-color: var(--accent); background: #fff; }
+  </style>
+</head>
+<body>
+
+<!-- Joke / sense-check modal -->
+<div id="joke-overlay">
+  <div class="joke-card">
+    <div class="joke-emoji" id="joke-emoji"></div>
+    <div class="joke-title" id="joke-title"></div>
+    <div class="joke-text"  id="joke-text"></div>
+    <div class="joke-actions">
+      <button class="joke-fix-btn"      onclick="closeJoke(true)">Fix my time</button>
+      <button class="joke-continue-btn" onclick="closeJoke(false)">Nope, I'm built different — continue anyway</button>
+    </div>
+  </div>
+</div>
+
+<!-- Setup overlay (first visit) -->
+<div id="setup-overlay">
+  <div class="setup-card">
+    <div class="setup-icon">🏃</div>
+    <h2>Create your profile</h2>
+    <p>Save race results, track your improvement, and get more accurate predictions over time.</p>
+    <input id="setup-name" type="text" placeholder="Your name" maxlength="40" autocomplete="off">
+    <button class="btn btn-primary" style="margin-top:0;" onclick="createProfile()">Get started →</button>
+    <br>
+    <button class="btn btn-ghost" onclick="skipProfile()" style="margin-top:12px;">Skip for now</button>
+  </div>
+</div>
+
+<!-- Nav -->
+<nav>
+  <a class="nav-brand" href="#" onclick="return false;">
+    <div class="logo-mark">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="11" cy="3" r="1.8" fill="white"/>
+        <path d="M9.5 5.5L7 10l3 1.5-1.5 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9.5 5.5L12 8l2.5-1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 10L5 13" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="logo-name">Running Pacer</span>
+  </a>
+  <button class="tab-btn active" onclick="showTab('predict')" id="tab-predict">Predict</button>
+  <button class="tab-btn"        onclick="showTab('history')" id="tab-history">My History</button>
+</nav>
+
+<!-- ═══════════════════ PREDICT PAGE ═══════════════════ -->
+<div class="page active" id="page-predict">
+  <div class="page-inner">
+    <div class="page-header">
+      <h1>Race Time Predictor</h1>
+      <p class="subtitle">Enter a recent result and predict your times for standard distances.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Your recent race</div>
+
+      <!-- Avg baseline banner -->
+      <div class="avg-banner" id="avg-banner">
+        <div>
+          <strong id="avg-banner-text">Averaged baseline available</strong><br>
+          Based on <span id="avg-count"></span> saved runs — may be more accurate than a single race.
+        </div>
+        <button class="use-avg-btn" onclick="useAvgBaseline()">Use average</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="dist-select">Distance</label>
+          <select id="dist-select" onchange="onDistChange()">
+            <option value="">Select distance…</option>
+            <option value="1">1 km</option>
+            <option value="1.609">1 mile</option>
+            <option value="3">3 km</option>
+            <option value="5">5 km</option>
+            <option value="8.045">5 miles</option>
+            <option value="10">10 km</option>
+            <option value="15">15 km</option>
+            <option value="21.0975">Half Marathon</option>
+            <option value="42.195">Marathon</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
+        <div class="field" id="custom-field" style="display:none;">
+          <label for="custom-dist">Distance (km)</label>
+          <input id="custom-dist" type="number" min="0.1" step="0.001" placeholder="e.g. 12.5">
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <div class="field">
+          <label>Finish time</label>
+          <div class="time-inputs">
+            <input id="hours"   type="number" min="0" max="99" placeholder="0">
+            <input id="minutes" type="number" min="0" max="59" placeholder="00">
+            <input id="seconds" type="number" min="0" max="59" placeholder="00">
+          </div>
+          <div class="time-labels"><span>hours</span><span>minutes</span><span>seconds</span></div>
+        </div>
+      </div>
+
+      <div class="error-msg" id="error-msg">Please select a distance and enter a valid finish time.</div>
+      <button class="btn btn-primary" onclick="predict()">Predict my times →</button>
+    </div>
+
+    <!-- Results -->
+    <div class="card results" id="results-card">
+      <div class="results-header">
+        <div class="card-title" style="margin-bottom:0">Predicted times</div>
+        <div class="based-on" id="based-on-label"></div>
+      </div>
+      <table id="results-table">
+        <thead>
+          <tr>
+            <th>Race</th>
+            <th>Predicted time</th>
+            <th>Pace / km</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+
+      <div class="save-row" id="save-row">
+        <span class="save-label">Save this run to your history?</span>
+        <button class="btn btn-secondary" onclick="saveRun()">Save run</button>
+        <span class="saved-confirm" id="saved-confirm">Saved ✓</span>
+      </div>
+    </div>
+
+    <p class="footnote">
+      Predictions use the <strong>Riegel formula</strong>: T₂ = T₁ × (D₂/D₁)<sup>1.06</sup>.
+      Results assume equal effort and conditions.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════ HISTORY PAGE ══════════════════ -->
+<div class="page" id="page-history">
+  <div class="page-inner">
+
+    <!-- Profile card -->
+    <div class="card">
+      <div id="profile-view">
+        <div class="profile-name-row">
+          <div class="avatar" id="avatar-initials">?</div>
+          <div class="profile-info">
+            <div class="profile-name-display" id="profile-name-display">Runner</div>
+            <div class="profile-meta" id="profile-meta">No runs saved yet</div>
+          </div>
+          <button class="btn btn-secondary" onclick="startEditName()" style="flex-shrink:0;">Edit name</button>
+        </div>
+      </div>
+      <div class="name-edit-row" id="name-edit-row">
+        <input id="name-edit-input" type="text" placeholder="Your name" maxlength="40">
+        <button class="btn btn-secondary" onclick="saveName()">Save</button>
+        <button class="btn btn-ghost" onclick="cancelEditName()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid" style="display:none;">
+      <div class="stat-box">
+        <div class="stat-val" id="stat-total">0</div>
+        <div class="stat-label">Total runs</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-best-dist">—</div>
+        <div class="stat-label">Most-run distance</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-improvement">—</div>
+        <div class="stat-label">Best improvement</div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card" id="chart-card" style="display:none;">
+      <div class="card-title">Pace trend</div>
+      <div class="chart-section">
+        <div class="chart-tabs" id="chart-tabs"></div>
+        <canvas id="trend-chart" height="180"></canvas>
+        <div class="chart-legend" id="chart-legend"></div>
+      </div>
+    </div>
+
+    <!-- History list -->
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+        <div class="card-title" style="margin-bottom:0;">Run history</div>
+        <div class="history-filters" id="history-filters" style="margin-bottom:0;"></div>
+      </div>
+      <div id="history-list">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <p>No runs yet. Make a prediction on the Predict tab and save it to build your history.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA LAYER
+// ═══════════════════════════════════════════════════════
+
+const STORE_KEY = 'rp_profile_v1';
+
+function loadProfile() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || null; }
+  catch(e) { return null; }
+}
+
+function saveProfile(p) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(p));
+}
+
+function getProfile() {
+  return loadProfile() || { name: '', entries: [] };
+}
+
+function ensureProfile() {
+  const p = loadProfile();
+  if (!p) {
+    document.getElementById('setup-overlay').classList.add('visible');
+    document.getElementById('setup-name').focus();
+  }
+  return p || { name: '', entries: [] };
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+
+const TARGETS = [
+  { name: '5K',            dist: 5,        label: '5 km' },
+  { name: '10K',           dist: 10,       label: '10 km' },
+  { name: 'Half Marathon', dist: 21.0975,  label: '21.1 km' },
+  { name: 'Marathon',      dist: 42.195,   label: '42.2 km' },
+];
+
+const DIST_NAMES = {
+  '1': '1 km', '1.609': '1 mi', '3': '3 km', '5': '5 km',
+  '8.045': '5 mi', '10': '10 km', '15': '15 km',
+  '21.0975': 'Half', '42.195': 'Full'
+};
+
+function riegel(t1, d1, d2) { return t1 * Math.pow(d2 / d1, 1.06); }
+
+function secsToHMS(s, forceHours) {
+  s = Math.round(s);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0 || forceHours) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function paceStr(totalSecs, distKm) {
+  const p = totalSecs / distKm;
+  return `${Math.floor(p/60)}:${String(Math.round(p%60)).padStart(2,'0')} /km`;
+}
+
+function paceSecs(totalSecs, distKm) { return totalSecs / distKm; }
+
+function distLabel(km) {
+  return DIST_NAMES[String(km)] || `${km} km`;
+}
+
+function initials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
+}
+
+function getSelectedDist() {
+  const sel = document.getElementById('dist-select').value;
+  if (sel === 'custom') return parseFloat(document.getElementById('custom-dist').value) || 0;
+  return parseFloat(sel) || 0;
+}
+
+function getEnteredSecs() {
+  const h = parseInt(document.getElementById('hours').value   || 0);
+  const m = parseInt(document.getElementById('minutes').value || 0);
+  const s = parseInt(document.getElementById('seconds').value || 0);
+  return h*3600 + m*60 + s;
+}
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+
+function showTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'history') renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════
+// SETUP / PROFILE
+// ═══════════════════════════════════════════════════════
+
+function createProfile() {
+  const name = document.getElementById('setup-name').value.trim();
+  if (!name) { document.getElementById('setup-name').focus(); return; }
+  const p = { name, entries: [] };
+  saveProfile(p);
+  document.getElementById('setup-overlay').classList.remove('visible');
+}
+
+function skipProfile() {
+  const p = { name: '', entries: [] };
+  saveProfile(p);
+  document.getElementById('setup-overlay').classList.remove('visible');
+}
+
+function startEditName() {
+  const p = getProfile();
+  document.getElementById('name-edit-input').value = p.name;
+  document.getElementById('name-edit-row').classList.add('visible');
+  document.getElementById('name-edit-input').focus();
+}
+
+function cancelEditName() {
+  document.getElementById('name-edit-row').classList.remove('visible');
+}
+
+function saveName() {
+  const name = document.getElementById('name-edit-input').value.trim();
+  const p = getProfile();
+  p.name = name;
+  saveProfile(p);
+  document.getElementById('name-edit-row').classList.remove('visible');
+  renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════
+// PREDICT PAGE
+// ═══════════════════════════════════════════════════════
+
+let lastPrediction = null; // { d1, t1, isAvg }
+
+function onDistChange() {
+  const sel = document.getElementById('dist-select').value;
+  document.getElementById('custom-field').style.display = sel === 'custom' ? 'flex' : 'none';
+  updateAvgBanner();
+  resetSaveState();
+}
+
+function updateAvgBanner() {
+  const d1 = getSelectedDist();
+  if (!d1) return;
+  const p = getProfile();
+  const matches = p.entries.filter(e => Math.abs(e.distKm - d1) < 0.05);
+  const banner = document.getElementById('avg-banner');
+  if (matches.length >= 2) {
+    const avgSecs = matches.reduce((s,e) => s + e.totalSecs, 0) / matches.length;
+    document.getElementById('avg-banner-text').textContent =
+      `Averaged baseline: ${secsToHMS(avgSecs)} over ${distLabel(d1)}`;
+    document.getElementById('avg-count').textContent =
+      `${matches.length} run${matches.length>1?'s':''}`;
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+}
+
+function useAvgBaseline() {
+  const d1 = getSelectedDist();
+  const p = getProfile();
+  const matches = p.entries.filter(e => Math.abs(e.distKm - d1) < 0.05);
+  if (matches.length < 2) return;
+  const avgSecs = matches.reduce((s,e) => s + e.totalSecs, 0) / matches.length;
+  document.getElementById('hours').value   = Math.floor(avgSecs/3600);
+  document.getElementById('minutes').value = Math.floor((avgSecs%3600)/60);
+  document.getElementById('seconds').value = Math.round(avgSecs%60);
+  predict(true);
+}
+
+// ═══════════════════════════════════════════════════════
+// SENSE-CHECK & JOKES
+// ═══════════════════════════════════════════════════════
+
+// Thresholds (pace in sec/km)
+const PACE_TOO_FAST = 131;   // ≤ 2:11/km — faster than the 1km world record (Noah Ngeny, 2:11.96)
+const PACE_TOO_SLOW = 1200;  // > 20:00/km — slower than a leisurely stroll
+
+const JOKES_FAST = [
+  { emoji: '⚡', title: 'Faster than Usain Bolt?!',         text: "Usain Bolt's 100m world record averages 10.44 m/s. Your pace just filed a restraining order against physics." },
+  { emoji: '🚀', title: 'NASA called.',                     text: "They want to know your fuel source. Also, the ISS clocked you overtaking it twice." },
+  { emoji: '🕹️', title: 'Cheat code detected.',            text: "Please enter your name for the world record books. Or disable god mode and try again." },
+  { emoji: '🦅', title: "That's not running, that's flying.", text: "The FAA requires a flight plan for anything moving that fast. Please file before your next race." },
+  { emoji: '⏱️', title: 'Time itself is jealous.',          text: "At that pace you'd finish a marathon in under 84 minutes. The current world record is 2:00:35. Just saying." },
+  { emoji: '🌩️', title: 'Lightning wants tips.',           text: "It travels at 440,000 km/h. You're giving it a run for its money. Literally." },
+  { emoji: '🎮', title: 'Speedrun world record: beaten.',   text: "The Strava algorithm flagged your activity as 'implausible'. It has never been so embarrassed." },
+];
+
+const JOKES_SLOW = [
+  { emoji: '🐢', title: 'Turtle speed confirmed.',          text: "A nearby tortoise just overtook you, looked back, and shrugged sympathetically." },
+  { emoji: '🦥', title: 'Sloth nation salutes you.',        text: "The sloth community has officially welcomed you as an honorary member. Membership badge ships in 6–8 weeks." },
+  { emoji: '🪨', title: 'Bold strategy.',                   text: "Letting the scenery fully sink in before moving on. Respect. The finish line will still be there next week." },
+  { emoji: '🌍', title: "You're moving slower than tectonic plates.",  text: "Continental drift is currently clocking 2.5 cm/year. It's gaining on you." },
+  { emoji: '📅', title: 'At this pace…',                    text: "You'd finish a 5K sometime next Thursday. Hope you packed snacks." },
+  { emoji: '🧓', title: 'Walking frame detected.',          text: "Your GPS has switched from 'Running' to 'Archaeological dig in progress'." },
+  { emoji: '☁️', title: 'Cloud watching pace.',             text: "Perfectly optimised for spotting interesting clouds and waving at strangers. Not so much for racing." },
+];
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+let jokeCallback = null;
+
+function showJoke(type, onContinue) {
+  const joke = pick(type === 'fast' ? JOKES_FAST : JOKES_SLOW);
+  document.getElementById('joke-emoji').textContent = joke.emoji;
+  document.getElementById('joke-title').textContent = joke.title;
+  document.getElementById('joke-text').textContent  = joke.text;
+  jokeCallback = onContinue;
+  document.getElementById('joke-overlay').classList.add('visible');
+}
+
+function closeJoke(fix) {
+  document.getElementById('joke-overlay').classList.remove('visible');
+  if (fix) {
+    // Focus the first empty time field so user can correct it immediately
+    const fields = ['hours','minutes','seconds'];
+    const target = fields.find(id => !document.getElementById(id).value) || 'hours';
+    document.getElementById(target).focus();
+    jokeCallback = null;
+  } else {
+    if (jokeCallback) jokeCallback();
+    jokeCallback = null;
+  }
+}
+
+// Close joke modal on backdrop click
+document.getElementById('joke-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeJoke(true);
+});
+
+function checkPace(t1, d1) {
+  const pace = t1 / d1;
+  if (pace < PACE_TOO_FAST) return 'fast';
+  if (pace > PACE_TOO_SLOW) return 'slow';
+  return null;
+}
+
+function predict(isAvg) {
+  const errEl = document.getElementById('error-msg');
+  errEl.classList.remove('visible');
+
+  const d1 = getSelectedDist();
+  const t1 = getEnteredSecs();
+
+  if (!d1 || d1 <= 0 || !t1 || t1 <= 0) {
+    errEl.classList.add('visible');
+    return;
+  }
+
+  // Sense-check: show joke modal and only continue if user dismisses
+  if (!isAvg) {
+    const issue = checkPace(t1, d1);
+    if (issue) {
+      showJoke(issue, () => runPrediction(d1, t1, false));
+      return;
+    }
+  }
+
+  runPrediction(d1, t1, !!isAvg);
+}
+
+function runPrediction(d1, t1, isAvg) {
+  lastPrediction = { d1, t1, isAvg };
+
+  const labelKm = document.getElementById('dist-select').value === 'custom'
+    ? `${d1} km`
+    : distLabel(document.getElementById('dist-select').value);
+
+  const basedOn = isAvg
+    ? `Averaged: ${secsToHMS(t1)} / ${labelKm}`
+    : `${secsToHMS(t1)} over ${labelKm}`;
+  document.getElementById('based-on-label').textContent = basedOn;
+
+  const tbody = document.getElementById('results-body');
+  tbody.innerHTML = '';
+
+  TARGETS.forEach(tgt => {
+    const t2 = riegel(t1, d1, tgt.dist);
+    const tr = document.createElement('tr');
+    if (Math.abs(tgt.dist - d1) < 0.01) tr.style.opacity = '0.45';
+    tr.innerHTML = `
+      <td><div class="race-name">${tgt.name}</div><div class="race-dist">${tgt.label}</div></td>
+      <td class="time-cell">${secsToHMS(t2)}</td>
+      <td><span class="pace-pill">${paceStr(t2, tgt.dist)}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('results-card').classList.add('visible');
+  document.getElementById('results-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  resetSaveState();
+  if (!isAvg) document.getElementById('save-row').classList.add('visible');
+}
+
+function resetSaveState() {
+  document.getElementById('save-row').classList.remove('visible');
+  document.getElementById('saved-confirm').classList.remove('visible');
+  document.getElementById('saved-confirm').textContent = 'Saved ✓';
+}
+
+function saveRun() {
+  if (!lastPrediction) return;
+  const p = getProfile();
+  const { d1, t1 } = lastPrediction;
+  const selVal = document.getElementById('dist-select').value;
+  const dLabel = selVal === 'custom' ? `${d1} km` : distLabel(selVal);
+  p.entries.push({
+    id: Date.now().toString(),
+    date: new Date().toISOString(),
+    distKm: d1,
+    distLabel: dLabel,
+    totalSecs: t1,
+  });
+  saveProfile(p);
+  document.getElementById('saved-confirm').classList.add('visible');
+  document.getElementById('save-row').querySelector('.btn').style.display = 'none';
+  updateAvgBanner();
+}
+
+// ═══════════════════════════════════════════════════════
+// HISTORY PAGE
+// ═══════════════════════════════════════════════════════
+
+let activeFilter = 'all';
+let activeChartDist = null;
+
+function renderHistory() {
+  const p = getProfile();
+
+  // Profile header
+  document.getElementById('profile-name-display').textContent = p.name || 'Anonymous Runner';
+  document.getElementById('avatar-initials').textContent = initials(p.name || 'R');
+  document.getElementById('profile-meta').textContent =
+    p.entries.length
+      ? `${p.entries.length} run${p.entries.length>1?'s':''} recorded`
+      : 'No runs saved yet';
+
+  if (!p.entries.length) {
+    document.getElementById('stats-grid').style.display = 'none';
+    document.getElementById('chart-card').style.display = 'none';
+    renderHistoryList(p.entries);
+    return;
+  }
+
+  document.getElementById('stats-grid').style.display = 'grid';
+
+  // Stats
+  document.getElementById('stat-total').textContent = p.entries.length;
+
+  const distCount = {};
+  p.entries.forEach(e => { distCount[e.distLabel] = (distCount[e.distLabel]||0)+1; });
+  const topDist = Object.entries(distCount).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('stat-best-dist').textContent = topDist ? topDist[0] : '—';
+
+  // Best improvement: biggest pace drop for any distance with ≥2 runs
+  let bestImp = null;
+  const grouped = groupByDist(p.entries);
+  for (const [, group] of Object.entries(grouped)) {
+    if (group.length < 2) continue;
+    const sorted = [...group].sort((a,b) => new Date(a.date)-new Date(b.date));
+    const first = paceSecs(sorted[0].totalSecs, sorted[0].distKm);
+    const last  = paceSecs(sorted[sorted.length-1].totalSecs, sorted[sorted.length-1].distKm);
+    const impPct = ((first - last) / first) * 100;
+    if (bestImp === null || impPct > bestImp) bestImp = impPct;
+  }
+  document.getElementById('stat-improvement').textContent =
+    bestImp !== null && bestImp > 0 ? `-${bestImp.toFixed(1)}%` : '—';
+
+  // Filters
+  renderFilters(p.entries);
+
+  // Chart
+  renderChartTabs(grouped);
+
+  // List
+  renderHistoryList(p.entries.filter(e => activeFilter === 'all' || e.distLabel === activeFilter));
+}
+
+function groupByDist(entries) {
+  const g = {};
+  entries.forEach(e => { (g[e.distLabel] = g[e.distLabel]||[]).push(e); });
+  return g;
+}
+
+function renderFilters(entries) {
+  const dists = [...new Set(entries.map(e => e.distLabel))];
+  const container = document.getElementById('history-filters');
+  container.innerHTML = '';
+
+  const all = document.createElement('button');
+  all.className = 'filter-btn' + (activeFilter === 'all' ? ' active' : '');
+  all.textContent = 'All';
+  all.onclick = () => { activeFilter = 'all'; renderHistory(); };
+  container.appendChild(all);
+
+  dists.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (activeFilter === d ? ' active' : '');
+    btn.textContent = d;
+    btn.onclick = () => { activeFilter = d; renderHistory(); };
+    container.appendChild(btn);
+  });
+}
+
+function renderHistoryList(entries) {
+  const container = document.getElementById('history-list');
+  if (!entries.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>No runs yet. Make a prediction and save it to build your history.</p></div>`;
+    return;
+  }
+
+  // Sort by date desc
+  const sorted = [...entries].sort((a,b) => new Date(b.date)-new Date(a.date));
+
+  // For delta: find previous run of same dist (chronologically)
+  const allByDist = groupByDist(entries);
+
+  container.innerHTML = '';
+  sorted.forEach(entry => {
+    const sameDist = (allByDist[entry.distLabel] || [])
+      .slice()
+      .sort((a,b) => new Date(a.date)-new Date(b.date));
+    const idx = sameDist.findIndex(e => e.id === entry.id);
+    const prev = idx > 0 ? sameDist[idx-1] : null;
+
+    let deltaHtml = '';
+    if (!prev) {
+      deltaHtml = `<span class="hist-delta first">First run</span>`;
+    } else {
+      const curPace  = paceSecs(entry.totalSecs, entry.distKm);
+      const prevPace = paceSecs(prev.totalSecs,  prev.distKm);
+      const diff = curPace - prevPace; // negative = faster
+      const absDiffStr = `${Math.abs(Math.floor(diff/60))}:${String(Math.abs(Math.round(diff%60))).padStart(2,'0')}`;
+      if (diff < -2) {
+        deltaHtml = `<span class="hist-delta better">▲ ${absDiffStr}/km faster</span>`;
+      } else if (diff > 2) {
+        deltaHtml = `<span class="hist-delta worse">▼ ${absDiffStr}/km slower</span>`;
+      } else {
+        deltaHtml = `<span class="hist-delta first">~same pace</span>`;
+      }
+    }
+
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `
+      <div class="hist-dist-badge">${entry.distLabel}</div>
+      <div class="hist-info">
+        <div class="hist-time">${secsToHMS(entry.totalSecs)}</div>
+        <div class="hist-pace">${paceStr(entry.totalSecs, entry.distKm)} &nbsp;·&nbsp; <span class="hist-date">${formatDate(entry.date)}</span></div>
+      </div>
+      ${deltaHtml}
+      <button class="hist-delete" title="Delete" onclick="deleteEntry('${entry.id}')">×</button>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function deleteEntry(id) {
+  const p = getProfile();
+  p.entries = p.entries.filter(e => e.id !== id);
+  saveProfile(p);
+  renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════
+// CHART
+// ═══════════════════════════════════════════════════════
+
+const CHART_COLORS = ['#D4622A','#2A7D4F','#3B6FD4','#8B4DA8'];
+
+function renderChartTabs(grouped) {
+  const dists = Object.keys(grouped).filter(d => grouped[d].length >= 1);
+  const card = document.getElementById('chart-card');
+
+  if (!dists.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  if (!activeChartDist || !grouped[activeChartDist]) activeChartDist = dists[0];
+
+  const tabsEl = document.getElementById('chart-tabs');
+  tabsEl.innerHTML = '';
+  dists.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'chart-tab' + (d === activeChartDist ? ' active' : '');
+    btn.textContent = d;
+    btn.onclick = () => { activeChartDist = d; renderChartTabs(grouped); };
+    tabsEl.appendChild(btn);
+  });
+
+  drawChart(grouped[activeChartDist]);
+}
+
+function drawChart(entries) {
+  const canvas = document.getElementById('trend-chart');
+  const legend = document.getElementById('chart-legend');
+
+  if (entries.length < 1) {
+    canvas.style.display = 'none';
+    legend.innerHTML = '';
+    return;
+  }
+  canvas.style.display = 'block';
+
+  const sorted = [...entries].sort((a,b) => new Date(a.date)-new Date(b.date));
+  const paces  = sorted.map(e => paceSecs(e.totalSecs, e.distKm));
+
+  // Compute average line
+  const avg = paces.reduce((s,v)=>s+v,0) / paces.length;
+  const minP = Math.min(...paces);
+  const maxP = Math.max(...paces);
+  const rangePad = (maxP - minP) || 10;
+
+  const W = canvas.offsetWidth || 580;
+  const H = 180;
+  canvas.width  = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  const PAD = { top:20, right:16, bottom:36, left: W < 360 ? 42 : 56 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top  - PAD.bottom;
+
+  const yMin = minP - rangePad * 0.2;
+  const yMax = maxP + rangePad * 0.2;
+
+  const xPos = i => PAD.left + (sorted.length < 2 ? cW/2 : (i / (sorted.length-1)) * cW);
+  const yPos = v => PAD.top  + cH - ((v - yMin) / (yMax - yMin)) * cH;
+
+  // Grid lines + y-axis labels
+  ctx.strokeStyle = 'rgba(0,0,0,0.07)';
+  ctx.lineWidth = 1;
+  const ticks = 4;
+  for (let i=0; i<=ticks; i++) {
+    const v = yMin + (yMax - yMin) * (i/ticks);
+    const y = yPos(v);
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(W-PAD.right, y); ctx.stroke();
+    ctx.fillStyle = '#9B9490';
+    ctx.font = `500 11px Inter, sans-serif`;
+    ctx.textAlign = 'right';
+    const pm = Math.floor(v/60); const ps = Math.round(v%60);
+    ctx.fillText(`${pm}:${String(ps).padStart(2,'0')}`, PAD.left - 6, y + 4);
+  }
+
+  // Average dashed line
+  const avgY = yPos(avg);
+  ctx.setLineDash([4,4]);
+  ctx.strokeStyle = 'rgba(107,101,96,0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, avgY);
+  ctx.lineTo(W - PAD.right, avgY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (sorted.length === 1) {
+    // Single point
+    ctx.fillStyle = CHART_COLORS[0];
+    ctx.beginPath();
+    ctx.arc(xPos(0), yPos(paces[0]), 5, 0, Math.PI*2);
+    ctx.fill();
+  } else {
+    // Line
+    ctx.strokeStyle = CHART_COLORS[0];
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap  = 'round';
+    ctx.beginPath();
+    paces.forEach((p, i) => {
+      const x = xPos(i), y = yPos(p);
+      i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // Fill under line
+    ctx.beginPath();
+    paces.forEach((p, i) => { const x=xPos(i),y=yPos(p); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    ctx.lineTo(xPos(paces.length-1), H-PAD.bottom);
+    ctx.lineTo(PAD.left, H-PAD.bottom);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, PAD.top, 0, H-PAD.bottom);
+    grad.addColorStop(0, 'rgba(212,98,42,0.18)');
+    grad.addColorStop(1, 'rgba(212,98,42,0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+
+  // Dots + dates
+  paces.forEach((p, i) => {
+    const x = xPos(i), y = yPos(p);
+    ctx.beginPath();
+    ctx.arc(x, y, 4.5, 0, Math.PI*2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = CHART_COLORS[0];
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // x-axis date label (only first, last, and midpoint for clarity)
+    if (i === 0 || i === sorted.length-1 || (sorted.length > 4 && i === Math.floor((sorted.length-1)/2))) {
+      const d = new Date(sorted[i].date);
+      const label = d.toLocaleDateString(undefined, { day:'numeric', month:'short' });
+      ctx.fillStyle = '#9B9490';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.textAlign = i === 0 ? 'left' : i === sorted.length-1 ? 'right' : 'center';
+      ctx.fillText(label, x, H - PAD.bottom + 16);
+    }
+  });
+
+  // Legend
+  legend.innerHTML = `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${CHART_COLORS[0]}"></div>
+      Pace per km
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(107,101,96,0.4); border-radius:2px; width:16px; height:2px;"></div>
+      Average
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('setup-overlay').classList.contains('visible')) {
+      createProfile();
+    } else if (document.getElementById('page-predict').classList.contains('active')) {
+      predict();
+    } else if (document.getElementById('name-edit-row').classList.contains('visible')) {
+      saveName();
+    }
+  }
+});
+
+document.getElementById('setup-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') createProfile();
+});
+
+['minutes','seconds'].forEach(id => {
+  document.getElementById(id).addEventListener('blur', function() {
+    if (this.value !== '' && +this.value > 59) this.value = 59;
+    if (this.value !== '' && +this.value < 0)  this.value = 0;
+  });
+});
+
+window.addEventListener('resize', () => {
+  const p = getProfile();
+  const grouped = groupByDist(p.entries);
+  if (activeChartDist && grouped[activeChartDist]) drawChart(grouped[activeChartDist]);
+});
+
+// Boot
+(function init() {
+  const p = loadProfile();
+  if (!p) {
+    document.getElementById('setup-overlay').classList.add('visible');
+  }
+})();
+</script>
+</body>
+</html>
